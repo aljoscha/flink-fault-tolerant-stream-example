@@ -29,6 +29,8 @@ import org.apache.flink.api.scala._
 import org.apache.flink.streaming.api.checkpoint.Checkpointed
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.streaming.api.scala.windowing.Time
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer.{FetcherType, OffsetStore}
 import org.apache.flink.streaming.connectors.kafka.api.KafkaSink
 import org.apache.flink.streaming.connectors.kafka.api.persistent.PersistentKafkaSource
 import org.apache.flink.streaming.util.serialization.{SerializationSchema, DeserializationSchema}
@@ -43,14 +45,17 @@ object ScalaJobCheatSheet {
 
     val props = new Properties
     props.setProperty("zookeeper.connect", "localhost:2181")
-    props.setProperty("group.id", "smaato-example")
+    props.setProperty("bootstrap.servers", "localhost:9092")
+    props.setProperty("group.id", "fault-tolerance-example")
     props.setProperty("auto.commit.enable", "false")
-
     props.setProperty("auto.offset.reset", "largest")
 
-    val cc = new ConsumerConfig(props)
-
-    val kafkaStream = env.addSource(new PersistentKafkaSource[String]("wikipedia-raw", new MySimpleStringSchema, cc))
+    val kafkaStream = env.addSource(new FlinkKafkaConsumer[String](
+      "wikipedia-raw",
+      new MySimpleStringSchema,
+      props,
+      OffsetStore.FLINK_ZOOKEEPER,
+      FetcherType.LEGACY_LOW_LEVEL))
 
     val parsedStream = kafkaStream.flatMap(new JsonExtractor)
 

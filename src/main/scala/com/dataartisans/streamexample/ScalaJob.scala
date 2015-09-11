@@ -19,20 +19,11 @@ package com.dataartisans.streamexample
  */
 
 import java.util.Properties
-import java.util.concurrent.TimeUnit
 
-import com.dataartisans.streamexample.JobCheatSheet.StatefulCounter
-import kafka.consumer.ConsumerConfig
-import org.apache.flink.api.common.functions.RichMapFunction
-import org.apache.flink.api.common.typeinfo.{BasicTypeInfo, TypeInformation}
-import org.apache.flink.api.java.typeutils.TypeExtractor
 import org.apache.flink.api.scala._
-import org.apache.flink.streaming.api.checkpoint.Checkpointed
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
-import org.apache.flink.streaming.api.scala.windowing.Time
-import org.apache.flink.streaming.connectors.kafka.api.persistent.PersistentKafkaSource
-import org.apache.flink.streaming.connectors.kafka.api.{KafkaSource, KafkaSink}
-import org.apache.flink.streaming.util.serialization.{DeserializationSchema, SerializationSchema}
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer.{FetcherType, OffsetStore}
 
 object ScalaJob {
 
@@ -42,8 +33,19 @@ object ScalaJob {
 //    env.enableCheckpointing(500)
     env.setParallelism(1)
 
-    val kafkaStream = env.addSource(new KafkaSource[String]("localhost:2181", "wikipedia-raw", new MySimpleStringSchema))
+    val props = new Properties
+    props.setProperty("zookeeper.connect", "localhost:2181")
+    props.setProperty("bootstrap.servers", "localhost:9092")
+    props.setProperty("group.id", "fault-tolerance-example")
+    props.setProperty("auto.commit.enable", "false")
+    props.setProperty("auto.offset.reset", "largest")
 
+    val kafkaStream = env.addSource(new FlinkKafkaConsumer[String](
+      "wikipedia-raw",
+      new MySimpleStringSchema,
+      props,
+      OffsetStore.FLINK_ZOOKEEPER,
+      FetcherType.LEGACY_LOW_LEVEL))
 
     val parsedStream = kafkaStream.flatMap(new JsonExtractor)
 

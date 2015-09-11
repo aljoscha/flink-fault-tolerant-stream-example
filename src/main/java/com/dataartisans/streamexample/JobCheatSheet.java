@@ -18,15 +18,14 @@ package com.dataartisans.streamexample;
  * limitations under the License.
  */
 
-import kafka.consumer.ConsumerConfig;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.checkpoint.Checkpointed;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.helper.Time;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.streaming.connectors.kafka.api.KafkaSink;
-import org.apache.flink.streaming.connectors.kafka.api.persistent.PersistentKafkaSource;
 
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -38,17 +37,19 @@ public class JobCheatSheet {
 		env.enableCheckpointing(500);
 		env.setParallelism(1);
 
-		Properties cProps = new Properties();
-		cProps.setProperty("zookeeper.connect", "localhost:2181");
-		cProps.setProperty("group.id", "smaato-example");
-		cProps.setProperty("auto.commit.enable", "false");
-
-		cProps.setProperty("auto.offset.reset", "largest");
-
-		ConsumerConfig cc = new ConsumerConfig(cProps);
+		Properties props = new Properties();
+		props.setProperty("zookeeper.connect", "localhost:2181");
+		props.setProperty("bootstrap.servers", "localhost:9092");
+		props.setProperty("group.id", "fault-tolerance-example");
+		props.setProperty("auto.commit.enable", "false");
+		props.setProperty("auto.offset.reset", "largest");
 
 		DataStream<String> kafkaStream = env
-				.addSource(new PersistentKafkaSource<>("wikipedia-raw", new MySimpleStringSchema(), cc));
+				.addSource(new FlinkKafkaConsumer<>("wikipedia-raw",
+						new MySimpleStringSchema(),
+						props,
+						FlinkKafkaConsumer.OffsetStore.FLINK_ZOOKEEPER,
+						FlinkKafkaConsumer.FetcherType.LEGACY_LOW_LEVEL));
 
 		DataStream<Edit> parsedStream = kafkaStream.flatMap(new JsonExtractor());
 
