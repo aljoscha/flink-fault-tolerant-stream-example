@@ -25,6 +25,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.helper.Time;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 import org.apache.flink.streaming.connectors.kafka.api.KafkaSink;
 
 import java.util.Properties;
@@ -64,7 +65,7 @@ public class JobCheatSheet {
 
 		result.print();
 
-		result.addSink(new KafkaSink<>("localhost:9092", "flink-output", new MySimpleStringSchema()));
+		result.addSink(new FlinkKafkaProducer<>("localhost:9092", "flink-output", new MySimpleStringSchema()));
 
 
 

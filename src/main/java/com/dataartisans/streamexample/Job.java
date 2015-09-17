@@ -18,9 +18,12 @@ package com.dataartisans.streamexample;
  * limitations under the License.
  */
 
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
+import org.apache.flink.streaming.connectors.kafka.api.KafkaSink;
 
 import java.util.Properties;
 
@@ -28,6 +31,8 @@ public class Job {
 
 	public static void main(String[] args) throws Exception {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+//		env.enableCheckpointing(300);
+		env.disableOperatorChaining();
 		env.setParallelism(1);
 
 		Properties props = new Properties();
@@ -44,9 +49,18 @@ public class Job {
 						FlinkKafkaConsumer.OffsetStore.FLINK_ZOOKEEPER,
 						FlinkKafkaConsumer.FetcherType.LEGACY_LOW_LEVEL));
 
-		DataStream<Edit> parsedStream = kafkaStream.flatMap(new JsonExtractor());
+		DataStream<Edit> parsedStream = kafkaStream.flatMap(new FakeExtractor());
 
-		parsedStream.print();
+		DataStream<String> bla = parsedStream
+				.map(new MapFunction<Edit, String>() {
+					@Override
+					public String map(Edit edit) throws Exception {
+						return "USER: " + edit.getUser();
+					}
+				});
+
+		bla.addSink(new FlinkKafkaProducer<>("localhost:9092", "flink-output", new MySimpleStringSchema()));
+
 
 		env.execute("Fault-Tolerant Stream Example");
 	}
