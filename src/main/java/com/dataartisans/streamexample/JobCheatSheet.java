@@ -54,32 +54,32 @@ public class JobCheatSheet {
 
 		DataStream<Edit> parsedStream = kafkaStream.flatMap(new JsonExtractor());
 
-		DataStream<String> result = parsedStream
-				.map( edit -> new Tuple3<>(edit.getChannel(), edit.getUser(), 1) ).returns("Tuple3<String,String,Integer>")
-				.groupBy(1)
-				.window(Time.of(5, TimeUnit.SECONDS))
-				.sum(2)
-				.flatten()
+//		DataStream<String> result = parsedStream
+//				.map( edit -> new Tuple3<>(edit.getChannel(), edit.getUser(), 1) ).returns("Tuple3<String,String,Integer>")
+//				.groupBy(1)
+//				.window(Time.of(5, TimeUnit.SECONDS))
+//				.sum(2)
+//				.flatten()
 //				.filter(v -> v.f2 > 2)
-				.map(new StatefulCounter());
+//				.map(new StatefulCounter());
+//
+//		result.print();
 
-		result.print();
-
-		result.addSink(new FlinkKafkaProducer<>("localhost:9092", "flink-output", new MySimpleStringSchema()));
+//		result.addSink(new FlinkKafkaProducer<>("localhost:9092", "flink-output", new MySimpleStringSchema()));
 
 
 
 		env.execute("Fault-Tolerant Stream Example");
 	}
 
-	public static class StatefulCounter extends RichMapFunction<Tuple3<String, String, Integer>, String> implements Checkpointed<Integer> {
+	public static class StatefulCounter extends RichMapFunction<String, String> implements Checkpointed<Integer> {
 		private static final long serialVersionUID = 1L;
 
 		private int count = 0;
 
 		@Override
-		public String map(Tuple3<String, String, Integer> in) throws Exception {
-			count += in.f2;
+		public String map(String in) throws Exception {
+			count += 1;
 			return "Count: " + count;
 		}
 

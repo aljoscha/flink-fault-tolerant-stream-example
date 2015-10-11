@@ -31,7 +31,7 @@ public class Job {
 
 	public static void main(String[] args) throws Exception {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-//		env.enableCheckpointing(300);
+		env.enableCheckpointing(300);
 		env.disableOperatorChaining();
 		env.setParallelism(1);
 
@@ -49,17 +49,14 @@ public class Job {
 						FlinkKafkaConsumer.OffsetStore.FLINK_ZOOKEEPER,
 						FlinkKafkaConsumer.FetcherType.LEGACY_LOW_LEVEL));
 
-		DataStream<Edit> parsedStream = kafkaStream.flatMap(new FakeExtractor());
+//		DataStream<Edit> parsedStream = kafkaStream.flatMap(new FakeExtractor());
 
-		DataStream<String> bla = parsedStream
-				.map(new MapFunction<Edit, String>() {
-					@Override
-					public String map(Edit edit) throws Exception {
-						return "USER: " + edit.getUser();
-					}
-				});
+		DataStream<String> count = kafkaStream
+				.map(new com.dataartisans.streamexample.JobCheatSheet.StatefulCounter());
 
-		bla.addSink(new FlinkKafkaProducer<>("localhost:9092", "flink-output", new MySimpleStringSchema()));
+//		count.print();
+
+		count.addSink(new FlinkKafkaProducer<>("localhost:9092", "flink-output", new MySimpleStringSchema()));
 
 
 		env.execute("Fault-Tolerant Stream Example");
