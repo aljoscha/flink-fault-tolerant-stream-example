@@ -28,7 +28,7 @@ import org.apache.flink.api.common.typeinfo.{BasicTypeInfo, TypeInformation}
 import org.apache.flink.api.scala._
 import org.apache.flink.streaming.api.checkpoint.Checkpointed
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
-import org.apache.flink.streaming.api.scala.windowing.Time
+import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer.{FetcherType, OffsetStore}
 import org.apache.flink.streaming.connectors.kafka.api.KafkaSink
@@ -61,10 +61,9 @@ object ScalaJobCheatSheet {
 
     val result = parsedStream
       .map { edit => (edit.getChannel, edit.getUser, 1) }
-      .groupBy(1)
-      .window(Time.of(5, TimeUnit.SECONDS))
+      .keyBy(1)
+      .timeWindow(Time.of(5, TimeUnit.SECONDS))
       .sum(2)
-      .flatten()
 //      .filter( _._3 > 2 )
       .map(new StatefulCounter)
 
